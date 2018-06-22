@@ -1,5 +1,9 @@
 actions = {}
 
+pkg_apt = {
+    'make': {},
+}
+
 for username, user_attrs in node.metadata.get('users', []).items():
     if 'dotfiles_git' in user_attrs:
         actions['deploy_dotfiles_{}'.format(username)] = {
