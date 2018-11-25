@@ -8,7 +8,7 @@ pkg = {
 for username, user_attrs in node.metadata.get('users', []).items():
     if 'dotfiles_git' in user_attrs:
         actions['deploy_dotfiles_{}'.format(username)] = {
-            'command': 'git clone %s /home/%s/.dotfiles' % (user_attrs['dotfiles_git'], username),
+            'command': 'git clone --recursive %s /home/%s/.dotfiles' % (user_attrs['dotfiles_git'], username),
             'needs': [
                 'pkg:git',
             ],
@@ -20,7 +20,9 @@ for username, user_attrs in node.metadata.get('users', []).items():
         }
 
         actions['checkout_dotfiles_{}'.format(username)] = {
-            'command': 'cd /home/%s/.dotfiles && sudo -u %s -H git pull origin master' % (username, username),
+            'command': 'cd /home/{user}/.dotfiles && '\
+                'sudo -u {user} -H git pull origin master && '\
+                'sudo -u {user} -H git submodule update --init'.format(user=username),
             'cascade_skip': False,
             'needs': [
                 'pkg:git',
