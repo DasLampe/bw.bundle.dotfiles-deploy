@@ -1,9 +1,12 @@
+global node
+
 actions = {}
 
 for username, user_attrs in node.metadata.get('users', []).items():
     if 'dotfiles_git' in user_attrs:
         actions['deploy_dotfiles_{}'.format(username)] = {
-            'command': 'git clone --recursive %s /home/%s/.dotfiles' % (user_attrs['dotfiles_git'], username),
+            'command': 'sudo -u {user} -H git clone --recursive {repo} /home/{user}/.dotfiles' \
+                .format(repo=user_attrs['dotfiles_git'], user=username),
             'needs': [
                 'pkg_apt:git',
             ],
