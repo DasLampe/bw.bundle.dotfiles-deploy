@@ -5,30 +5,32 @@ actions = {}
 for username, user_attrs in node.metadata.get('users', []).items():
     if 'dotfiles_git' in user_attrs:
         actions['deploy_dotfiles_{}'.format(username)] = {
-            'command': 'sudo -u {user} -H git clone --recursive {repo} /home/{user}/.dotfiles' \
-                .format(repo=user_attrs['dotfiles_git'], user=username),
+            'command': 'sudo -u {user} -H git clone --recursive {repo} /home/{user}/.dotfiles'
+                       .format(repo=user_attrs['dotfiles_git'], user=username),
+            'unless': "test -x /home/{}/.dotfiles".format(username),
             'needs': [
                 'pkg_apt:git',
-            ],
-            'unless': 'test -x /home/%s/.dotfiles' % (username),
+                ],
             'triggers': {
                 'action:change_user_{}'.format(username),
                 'action:run_make_dotfiles_{}'.format(username),
-            },
+                },
         }
 
         actions['checkout_dotfiles_{}'.format(username)] = {
-            'command': 'cd /home/{user}/.dotfiles && '\
-                'sudo -u {user} -H git pull origin master && '\
-                'sudo -u {user} -H git submodule update --init'.format(user=username),
+            'command': 'cd /home/{user}/.dotfiles && \
+                       sudo -u {user} -H git pull origin master && \
+                       sudo -u {user} -H git submodule update --init'.format(user=username),
+            'unless': '[ "`cd /home/{}/.dotfiles && git rev-list HEAD...origin/master --count`" -eq "0" ]'.format(
+                username),
             'cascade_skip': False,
             'needs': [
                 'pkg_apt:git',
                 'action:deploy_dotfiles_{}'.format(username),
-            ],
+                ],
             'triggers': {
                 'action:run_make_dotfiles_{}'.format(username),
-            }
+                }
         }
 
         actions['change_user_{}'.format(username)] = {
