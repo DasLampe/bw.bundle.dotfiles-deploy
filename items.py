@@ -1,4 +1,5 @@
 global node
+from urllib.parse import urlparse
 
 actions = {}
 git_deploy = {}
@@ -6,31 +7,60 @@ directories = {}
 
 for username, user_attrs in node.metadata.get('users', {}).items():
     if user_attrs.get('dotfiles_git', False):
-        dirname = '/home/{}/.dotfiles'.format(username)
+        repourl = user_attrs.get('dotfiles_git')
+        dirname = f'/home/{username}/.dotfiles'
+        clone_options = []
 
-        directories[dirname] = {
-            'owner': username,
-        }
+        if node.metadata.get('dotfiles-deploy', {}).get('recursive'):
+            clone_options.append('--recursive')
 
-        git_deploy[dirname] = {
-            'repo': user_attrs.get('dotfiles_git'),
-            'rev': 'master',
+        if not urlparse(repourl):
+            directories[dirname] = {
+                'owner': username,
+            }
+
+            git_deploy[dirname] = {
+                'repo': repourl,
+                'rev': 'master',
+                'needs': [
+                    f'user:{username}',
+                ],
+                'tags': [
+                    f'dotfiles_deploy_{username}'
+                ]
+            }
+        else:
+            actions[f'clone_dotfiles_for_{username}'] = {
+                'command': f'git clone {" ".join(clone_options)} {repourl} {dirname}',
+                'unless': f'test -d {dirname}',
+                'needs': [
+                    f'user:{username}',
+                    'pkg_apt:git',
+                ],
+                'tags': [
+                    f'dotfiles_deploy_{username}',
+                ]
+            }
+
+            if node.metadata.get('dotfiles-deploy', {}).get('update'):
+                actions[f'update_dotfiles_for_{username}'] = {
+                    'command': f'cd {dirname} && git pull origin',
+                    'needs': [
+                        f'action:clone_dotfiles_for_{username}',
+                    ]
+                }
+
+        actions[f'chown_dotfiles_for_{username}'] = {
+            'command': f'chown -R {username} {dirname}',
             'needs': [
-                'user:{}'.format(username),
-            ]
-        }
-
-        actions['chown_dotfiles_for_{}'.format(username)] = {
-            'command': 'chown -R {user} {dir}'.format(user=username, dir=dirname),
-            'needs': [
-                'git_deploy:{}'.format(dirname)
+                f'tag:dotfiles_deploy_{username}'
             ]
         }
 
         actions['run_make_dotfiles_{}'.format(username)] = {
-            'command': 'cd {dir} && sudo -u {user} -H make all'.format(dir=dirname, user=username),
+            'command': f'cd {dirname} && sudo -u {username} -H make all',
             'needs': [
-                'action:chown_dotfiles_for_{}'.format(username),
+                f'action:chown_dotfiles_for_{username}',
                 'pkg_apt:make',
             ]
         }
