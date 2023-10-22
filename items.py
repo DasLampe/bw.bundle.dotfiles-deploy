@@ -45,6 +45,7 @@ for username, user_attrs in node.metadata.get('users', {}).items():
             if node.metadata.get('dotfiles-deploy', {}).get('update'):
                 actions[f'update_dotfiles_for_{username}'] = {
                     'command': f'cd {dirname} && git pull origin',
+                    'unless': f'test ! -d {dirname}/.git', # Skip if there is no .git dir
                     'needs': [
                         f'action:clone_dotfiles_for_{username}',
                     ]
