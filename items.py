@@ -25,13 +25,14 @@ for username, user_attrs in node.metadata.get('users', {}).items():
                 'needs': [
                     f'user:{username}',
                 ],
+                'owner': username,
                 'tags': [
                     f'dotfiles_deploy_{username}'
                 ]
             }
         else:
             actions[f'clone_dotfiles_for_{username}'] = {
-                'command': f'git clone {" ".join(clone_options)} {repourl} {dirname}',
+                'command': f'sudo -u {username} -H git clone {" ".join(clone_options)} {repourl} {dirname}',
                 'unless': f'test -d {dirname}',
                 'needs': [
                     f'user:{username}',
@@ -44,10 +45,11 @@ for username, user_attrs in node.metadata.get('users', {}).items():
 
             if node.metadata.get('dotfiles-deploy', {}).get('update'):
                 actions[f'update_dotfiles_for_{username}'] = {
-                    'command': f'cd {dirname} && git pull origin',
+                    'command': f'cd {dirname} && sudo -u {username} -H git pull origin',
                     'unless': f'test ! -d {dirname}/.git', # Skip if there is no .git dir
                     'needs': [
                         f'action:clone_dotfiles_for_{username}',
+                        f'user:{username}',
                     ]
                 }
 
