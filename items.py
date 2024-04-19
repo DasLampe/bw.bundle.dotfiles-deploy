@@ -50,14 +50,16 @@ for username, user_attrs in node.metadata.get('users', {}).items():
                     'needs': [
                         f'action:clone_dotfiles_for_{username}',
                         f'user:{username}',
-                    ]
+                    ],
+                    'interactive': False,
                 }
 
         actions[f'chown_dotfiles_for_{username}'] = {
             'command': f'chown -R {username} {dirname}',
             'needs': [
                 f'tag:dotfiles_deploy_{username}'
-            ]
+            ],
+            'interactive': False,
         }
 
         actions['run_make_dotfiles_{}'.format(username)] = {
@@ -65,5 +67,6 @@ for username, user_attrs in node.metadata.get('users', {}).items():
             'needs': [
                 f'action:chown_dotfiles_for_{username}',
                 'pkg_apt:make',
-            ]
+            ],
+            'interactive': False,
         }
