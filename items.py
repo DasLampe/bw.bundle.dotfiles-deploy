@@ -17,6 +17,9 @@ for username, user_attrs in node.metadata.get('users', {}).items():
         if not urlparse(repourl):
             directories[dirname] = {
                 'owner': username,
+                'needs': [
+                    f'user:{username}'
+                ]
             }
 
             git_deploy[dirname] = {
