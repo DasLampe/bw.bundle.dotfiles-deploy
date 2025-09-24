@@ -26,7 +26,7 @@ def add_apt_packages(metadata):
     return {
         'apt': {
             'packages': {
-                'make': {'installed': True},
+                'rsync': {'installed': True},
             },
         },
     }
