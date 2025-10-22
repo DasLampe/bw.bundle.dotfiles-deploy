@@ -55,6 +55,9 @@ for username, user_attrs in node.metadata.get('users', {}).items():
                     ],
                     'triggers': [
                         f'action:move_dotfiles_to_home_{username}',
+                    ],
+                    'before': [
+                        f'action:update_dotfiles_for_{username}',
                     ]
                 }
 
@@ -66,11 +69,16 @@ for username, user_attrs in node.metadata.get('users', {}).items():
                     'pkg_apt:rsync',
                 ],
                 'triggered': True,
+                'before': [
+                    f'action:update_dotfiles_for_{username}',
+                ],
             }
 
         if node.metadata.get('dotfiles-deploy', {}).get('update'):
             actions[f'update_dotfiles_for_{username}'] = {
-                'command': f'cd {homedir} && sudo -u {username} -H git pull origin',
+                'command': f'cd {homedir} && '
+                           f'sudo -u {username} -H git remote set-url origin {repourl} && '
+                           f'sudo -u {username} -H git pull origin',
                 'unless': f'test ! -d {homedir}/.git', # Skip if there is no .git dir
                 'needs': [
                     f'user:{username}',
